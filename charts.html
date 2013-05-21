@@ -1,0 +1,116 @@
+<html>
+  <head>
+    <!--Load the AJAX API-->
+    <script type="text/javascript" src="data.json"></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <script type="text/javascript">
+
+      // Load the Visualization API and the piechart package.
+      google.load('visualization', '1.0', {'packages':['corechart']});
+
+      // Set a callback to run when the Google Visualization API is loaded.
+      google.setOnLoadCallback(onDataLoaded);
+
+
+      // Variables to store information
+      var testsByStatus = [],
+          testsByError  = [];
+
+      function getArrayByKey(map,key) {
+        var arr = map[key];
+        if (arr == undefined) {
+            arr = [];
+            map[key] = arr;
+        }
+        return arr;
+      }
+
+
+      // Load the data
+      function onDataLoaded(data,status) {
+        console.log('onDataLoaded');
+        // rawdata = data;
+
+        for (i in rawdata.suites[0].cases) {
+            var c = rawdata.suites[0].cases[i];
+            if (c.status != null) getArrayByKey(testsByStatus, c.status).push(c);
+            if (c.errorDetails != null) {
+              err = c.errorDetails.split('Build info:')[0];
+              getArrayByKey(testsByError, err).push(c);
+            }
+        }
+
+        // Draw cases by error
+        var keys = [];
+        for (key in testsByError) keys.push(key);
+        keys.sort();
+        var total = 0;
+        var dt = new google.visualization.DataTable();
+        dt.addColumn('string','Error');
+        dt.addColumn('number','Count');
+        for(var i=0; i<keys.length; i++) {
+            key = keys[i];
+            dt.addRows([[key, testsByError[key].length]]);
+            total += testsByError[key].length;
+        }
+        var chart = new google.visualization.PieChart(document.getElementById('cases_by_error'));
+        chart.draw(dt, {'title':'Failing tests by error: ' + total,'width':800,'height':300});
+
+        // Draw cases by status
+        var keys = [];
+        for (key in testsByStatus) keys.push(key);
+        keys.sort();
+        var total = 0;
+        var dt = new google.visualization.DataTable();
+        dt.addColumn('string','Status');
+        dt.addColumn('number','Count');
+        for(var i=0; i<keys.length; i++) {
+            key = keys[i];
+            dt.addRows([[key, testsByStatus[key].length]]);
+            total += testsByStatus[key].length;
+        }
+        var chart = new google.visualization.PieChart(document.getElementById('cases_by_status'));
+        chart.draw(dt, {'title':'Tests by status: ' + total,'width':800,'height':300});
+      }
+
+      // console.log('before ajax');
+      // $.getJSON('http://ciprod:8080/job/cloudevent-portal-platform-automation-patch/com.salesforce.it.automation$CloudEvents/140/testReport/api/json',null,onDataLoaded);
+
+      // Callback that creates and populates a data table,
+      // instantiates the pie chart, passes in the data and
+      // draws it.
+      function drawChart() {
+        onDataLoaded(data,status);
+
+        // Create the data table.
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'Topping');
+        data.addColumn('number', 'Slices');
+        data.addRows([
+          ['Mushrooms', 3],
+          ['Onions', 1],
+          ['Olives', 1],
+          ['Zucchini', 1],
+          ['Pepperoni', 2]
+        ]);
+
+        // Set chart options
+        var options = {'title':'How Much Pizza I Ate Last Night',
+                       'width':400,
+                       'height':300};
+
+        // Instantiate and draw our chart, passing in some options.
+        var chart = new google.visualization.PieChart(document.getElementById('chart_div'));
+        chart.draw(data, options);
+      }
+    </script>
+  </head>
+
+  <body>
+    <!--Div that will hold the pie chart-->
+    <div id="chart_div"></div>
+    <div id="cases_by_error"></div>
+    <div id="cases_by_status"></div>
+  </body>
+</html>
